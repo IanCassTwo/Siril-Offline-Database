@@ -9,12 +9,11 @@ CREATE TABLE stars (
     pmdec DOUBLE PRECISION,
     phot_g_mean_mag REAL,
     phot_bp_mean_mag REAL,
-    teff_gspphot REAL,
     sphere_point spoint
 );
 
 
-COPY stars (random_index, ra, dec, pmra, pmdec, phot_g_mean_mag, phot_bp_mean_mag, teff_gspphot, source_id) FROM '/path/to/your/file.csv' DELIMITER ',' CSV HEADER;
+COPY stars (random_index, ra, dec, pmra, pmdec, phot_g_mean_mag, phot_bp_mean_mag, source_id) FROM '/path/to/your/file.csv' DELIMITER ',' CSV HEADER;
 
 UPDATE stars SET sphere_point = spoint(radians(ra), radians(dec));
 

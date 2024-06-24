@@ -23,13 +23,12 @@ class Star(BaseModel):
     pmdec: Optional[float]
     phot_g_mean_mag: float
     phot_bp_mean_mag: float
-    teff_gspphot: Optional[float]
 
 def get_db_connection():
     conn = psycopg2.connect(
         dbname='stars',
         user='stars',
-        password='<password>',
+        password='stars',
         host='localhost'
     )
     return conn
@@ -47,17 +46,18 @@ def get_star_by_id(source_id: int):
     return star
 
 @app.get("/search", response_model=List[Star])
-def cone_search(ra: float, dec: float, radius: float):
+def cone_search(ra: float, dec: float, radius: float, mag: float):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     query = """
-    SELECT source_id, random_index, ra, dec, pmra, pmdec, phot_g_mean_mag, phot_bp_mean_mag, teff_gspphot
+    SELECT source_id, random_index, ra, dec, pmra, pmdec, phot_g_mean_mag, phot_bp_mean_mag
     FROM stars
     WHERE sphere_point @ scircle(spoint(radians(%s), radians(%s)), radians(%s))
+    AND phot_g_mean_mag <= %s
     ORDER BY random_index
     LIMIT 5000
     """
-    cursor.execute(query, (ra, dec, radius))
+    cursor.execute(query, (ra, dec, radius, mag))
     stars = cursor.fetchall()
     cursor.close()
     conn.close()
