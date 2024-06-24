@@ -1,0 +1,16 @@
+[Unit]
+Description=Uvicorn instance to serve FastAPI application
+After=network.target
+
+[Service]
+User=stars
+Group=stars
+WorkingDirectory=/home/stars/stars
+ExecStart=/usr/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
