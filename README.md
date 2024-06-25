@@ -23,3 +23,5 @@ This is a FastAPI app that exposes 2 GET endpoints:-
 * /star/<source_id>
 * /search?ra=<ra>&dec=<dec>&radius=<radius>&mag=<magnitude> (all floats)
 
+Run with ```/usr/bin/uvicorn main:app --host 0.0.0.0 --port 8000```
+
