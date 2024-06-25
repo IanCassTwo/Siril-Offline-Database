@@ -54,7 +54,6 @@ def cone_search(ra: float, dec: float, radius: float, mag: float):
     FROM stars
     WHERE sphere_point @ scircle(spoint(radians(%s), radians(%s)), radians(%s))
     AND phot_g_mean_mag <= %s
-    ORDER BY random_index
     LIMIT 5000
     """
     cursor.execute(query, (ra, dec, radius, mag))
