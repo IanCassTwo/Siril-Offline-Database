@@ -33,7 +33,7 @@ def get_db_connection():
     )
     return conn
 
-@app.get("/star/{source_id}", response_model=Star)
+@app.get("/star", response_model=Star)
 def get_star_by_id(source_id: int):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
