@@ -48,13 +48,9 @@ def download_and_process_file(file_url):
             total += 1
 
 
-            if row[header_indices['has_xp_sampled']] != '"True"':
+            if row[header_indices['has_xp_sampled']] == '"False"' and row[header_indices['has_xp_continuous']] == '"False"':
                 continue
 
-
-            if row[header_indices['has_xp_continuous']] != '"True"':
-                continue
-                
             try:
                 phot_g_mean_mag = float(row[header_indices['phot_g_mean_mag']])
             except ValueError:
