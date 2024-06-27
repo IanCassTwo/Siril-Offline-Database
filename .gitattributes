@@ -1,2 +1,0 @@
-exported-gaia-data.csv.bz2 filter=lfs diff=lfs merge=lfs -text
-*.csv.bz2 filter=lfs diff=lfs merge=lfs -text
