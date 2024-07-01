@@ -23,10 +23,11 @@ This is a PostgresQL database with pgSphere extension. This allows us to populat
 Specifies a schema for the PostgresQL database with pgSphere extension
 
 ## The Web App
-This is a FastAPI app that exposes 2 GET endpoints:-
+This is an asynchronous FastAPI app that exposes 2 GET endpoints:-
 
-* /star?source_id=<source_id>
-* /search?ra=<ra>&dec=<dec>&radius=<radius>&mag=<magnitude> (all floats)
+* /star/<source_id>
+* /stars?ra=<ra>&dec=<dec>&radius=<radius>&mag=<magnitude>
+* /spectra/<source_id>
+* /spectras?ra=<ra>&dec=<dec>&radius=<radius>&mag=<magnitude>
 
 Run with ```/usr/bin/uvicorn main:app --host 0.0.0.0 --port 8000```
-
