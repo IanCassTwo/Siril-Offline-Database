@@ -11,11 +11,14 @@ CREATE TABLE stars (
     flux REAL[],
 );
 
-COPY stars (random_index, ra, dec, pmra, pmdec, phot_g_mean_mag, phot_bp_mean_mag, source_id) FROM '/path/to/your/file.csv' DELIMITER ',' CSV HEADER;
+COPY stars (ra, dec, pmra, pmdec, phot_g_mean_mag, phot_bp_mean_mag, source_id) FROM '/path/to/your/file.csv' DELIMITER ',' CSV HEADER;
 
 UPDATE stars
 SET sphere_point = spoint(radians(ra), radians(dec));
 
 CREATE INDEX stars_sidx ON stars USING gist (sphere_point);
 CREATE INDEX stars_phot_g_mean_mag_idx ON stars (phot_g_mean_mag);
+
+ALTER TABLE stars drop column ra;
+ALTER TABLE stars drop column dec;
 
