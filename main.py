@@ -18,13 +18,7 @@ class Star(BaseModel):
     pmdec: Optional[float]
     phot_g_mean_mag: float
 
-class Spectra(BaseModel):
-    source_id: int
-    ra: float
-    dec: float
-    pmra: Optional[float]
-    pmdec: Optional[float]
-    phot_g_mean_mag: float
+class Spectra(Star):
     flux: List[float]
 
 async def get_db_connection():
@@ -63,20 +57,20 @@ async def fetch_one(conn, query: str, model_class: Type[ModelType], *args):
 @app.get("/spectra/{source_id}", response_model=Spectra)
 async def get_spectra_by_id(source_id: int):
     conn = await get_db_connection()
-    query = "SELECT * FROM stars WHERE source_id = $1"
+    query = "SELECT source_id, degrees(long(sphere_point)) AS ra, degrees(lat(sphere_point)) AS dec, pmra, pmdec, phot_g_mean_mag, flux FROM stars WHERE source_id = $1"
     return await fetch_one(conn, query, Spectra, source_id)
 
 @app.get("/star/{source_id}", response_model=Star)
 async def get_star_by_id(source_id: int):
     conn = await get_db_connection()
-    query = "SELECT * FROM stars WHERE source_id = $1"
+    query = "SELECT source_id, degrees(long(sphere_point)) AS ra, degrees(lat(sphere_point)) AS dec, pmra, pmdec, phot_g_mean_mag  FROM stars WHERE source_id = $1"
     return await fetch_one(conn, query, Star, source_id)
 
 @app.get("/stars", response_model=List[Star])
 async def star_search(ra: float, dec: float, radius: float, mag: float):
     conn = await get_db_connection()
     query = """
-    SELECT *
+    SELECT source_id, degrees(long(sphere_point)) AS ra, degrees(lat(sphere_point)) AS dec, pmra, pmdec, phot_g_mean_mag
     FROM stars
     WHERE sphere_point <@ scircle(spoint(radians($1), radians($2)), radians($3))
     AND phot_g_mean_mag <= $4
@@ -88,7 +82,7 @@ async def star_search(ra: float, dec: float, radius: float, mag: float):
 async def spectra_search(ra: float, dec: float, radius: float, mag: float):
     conn = await get_db_connection()
     query = """
-    SELECT *
+    SELECT source_id, degrees(long(sphere_point)) AS ra, degrees(lat(sphere_point)) AS dec, pmra, pmdec, phot_g_mean_mag, flux
     FROM stars
     WHERE sphere_point <@ scircle(spoint(radians($1), radians($2)), radians($3))
     AND phot_g_mean_mag <= $4
