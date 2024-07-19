@@ -31,3 +31,9 @@ This is an asynchronous FastAPI app that exposes 2 GET endpoints:-
 * /spectras?ra=<ra>&dec=<dec>&radius=<radius>&mag=<magnitude>
 
 Run with ```/usr/bin/uvicorn main:app --host 0.0.0.0 --port 8000```
+
+## The Offline File Generator
+This is a Python script which will create an offline binary file containing the star and flux data. The flux data is scaled per star and stored as a 16bit half-precision float.
+
+## The Binary File Tester
+This is based almost entirely on a KStars data tool and is designed to read the binary file and report on any issues

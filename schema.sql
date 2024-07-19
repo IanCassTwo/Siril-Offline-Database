@@ -2,6 +2,7 @@
 
 CREATE TABLE stars (
     source_id BIGINT PRIMARY KEY,
+    trixel INTEGER,
     ra REAL,
     dec REAL,
     pmra REAL,
@@ -21,4 +22,5 @@ CREATE INDEX stars_phot_g_mean_mag_idx ON stars (phot_g_mean_mag);
 
 ALTER TABLE stars drop column ra;
 ALTER TABLE stars drop column dec;
+CREATE INDEX stars_trixel_idx ON stars (trixel);
 
