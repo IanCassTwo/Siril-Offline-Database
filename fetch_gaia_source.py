@@ -8,7 +8,14 @@ import gzip
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import queue
 
-POOL_SIZE = 8
+#
+# This script fetches GAIA source csv files, filters them and outputs a csv suitable for
+# importing into the local database using a COPY command
+#
+# e.g. COPY stars (ra, dec, pmra, pmdec, phot_g_mean_mag, source_id, has_xp_sampled, teff) FROM '/path/to/your/file.csv' DELIMITER ',' CSV HEADER NULL "null";
+#
+
+POOL_SIZE = 16
 lock = threading.Lock()
 data_queue = queue.Queue()
 
@@ -47,34 +54,67 @@ def download_and_process_file(file_url):
 
             total += 1
 
-
-            if row[header_indices['has_xp_sampled']] == '"False"' and row[header_indices['has_xp_continuous']] == '"False"':
-                continue
+            has_xp_sampled = 1 if row[header_indices['has_xp_sampled']] == '"True"' else 0
 
             try:
                 phot_g_mean_mag = float(row[header_indices['phot_g_mean_mag']])
             except ValueError:
+#                print(f"phot_g_mean_mag error {row[header_indices['phot_g_mean_mag']]}")
                 continue
 
-            if phot_g_mean_mag > 15:
+            if phot_g_mean_mag > 20:
                 continue
+
+            pmra = 0
+            if row[header_indices['pmra']] != 'null':
+                pmra = row[header_indices['pmra']]
+
+            pmdec = 0
+            if row[header_indices['pmdec']] != 'null':
+                pmdec = row[header_indices['pmdec']]
+
+
+            teff = 0
+            if row[header_indices['teff_gspphot']] != 'null':
+                teff = row[header_indices['teff_gspphot']]
 
             accepted += 1
 
-            data_queue.put(f"{row[header_indices['random_index']]},{row[header_indices['ra']]},{row[header_indices['dec']]},{row[header_indices['pmra']]},{row[header_indices['pmdec']]},{row[header_indices['phot_g_mean_mag']]},{row[header_indices['phot_bp_mean_mag']]},{row[header_indices['source_id']]}\n")
+            data_queue.put(f"{row[header_indices['ra']]},{row[header_indices['dec']]},{pmra},{pmdec},{row[header_indices['phot_g_mean_mag']]},{row[header_indices['source_id']]},{has_xp_sampled},{teff}\n")
         
     os.remove(file_path)
     return (f"Processed {file_path}: Accepted {accepted} lines from {total}")
 
 def write_to_file():
     print(f"Queue reader started")
-    with open('data.csv', 'w') as file_handle:
-        file_handle.write(f'random_index,ra,dec,pmra,pmdec,pmag,bmag,source_id\n')
+    line_count = 0
+    file_index = 1
+    
+    # Open the first file and write the header
+    file_handle = open(f'data{file_index}.csv', 'w', buffering=1024*2048)
+    file_handle.write(f'ra,dec,pmra,pmdec,phot_g_mean_mag,source_id,has_xp_sampled,teff\n')
+
+    try:
         while True:
             data = data_queue.get()
             if data is None:
                 break  # Stop processing when None is encountered
-            file_handle.write(data)
+            
+            file_handle.write(data)  # Write the data to the current file
+            line_count += 1  # Increment the line counter
+
+            if line_count >= 10_000_000:  # If 10 million lines are written
+                file_handle.close()  # Close the current file
+                
+                # Prepare for the next file
+                file_index += 1
+                file_handle = open(f'data{file_index}.csv', 'w', buffering=1024*2048)
+                file_handle.write(f'ra,dec,pmra,pmdec,phot_g_mean_mag,source_id,has_xp_sampled,teff\n')  # Write the header to the new file
+                line_count = 0  # Reset the line counter
+
+    finally:
+        file_handle.close()  # Ensure the last file is closed after processing is complete
+
 
 def main():
     url = 'https://cdn.gea.esac.esa.int/Gaia/gdr3/gaia_source/'

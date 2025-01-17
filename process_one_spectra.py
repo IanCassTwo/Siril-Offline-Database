@@ -10,12 +10,11 @@ import queue
 import psycopg2
 import json
 import traceback
-import re
+import sys
 
+# 
+# This will process one spectra csv file in case you need to reprocess one
 #
-# This file will fetch spectra data from GAIA csv files and populate the local database
-#
-
 
 POOL_SIZE = 8
 lock = threading.Lock()
@@ -27,21 +26,7 @@ def fetch_urls(url):
     soup = BeautifulSoup(response.content, 'html.parser')
     return [url + link.get('href') for link in soup.find_all('a') if link.get('href').endswith('.csv.gz')]
 
-def download_and_process_file(file_url):
-
-    # Check if the string does not match the pattern
-    #pattern = r"_(667|668|669)"
-    #if not re.search(pattern, file_url):
-    #    print("No match found.")
-    #    return
-
-    print(f"Downloading {file_url}")
-    file_name = file_url.split('/')[-1]
-    file_path = os.path.join('.', file_name)
-    
-    with requests.get(file_url, stream=True) as r:
-        with open(file_path, 'wb') as f:
-            shutil.copyfileobj(r.raw, f)
+def process_file(file_path):
 
     connection_string = 'postgresql://stars:stars@localhost:5432/stars2'
     conn = psycopg2.connect(connection_string)
@@ -127,34 +112,17 @@ def download_and_process_file(file_url):
     os.remove(output_csv)
     return (f"Processed {file_path}")
 
-def write_to_file():
-    print(f"Queue reader started")
-    with open('data.csv', 'w') as file_handle:
-        file_handle.write(f'random_index,ra,dec,pmra,pmdec,pmag,bmag,source_id\n')
-        while True:
-            data = data_queue.get()
-            if data is None:
-                break  # Stop processing when None is encountered
-            file_handle.write(data)
 
 def main():
-    url = 'https://cdn.gea.esac.esa.int/Gaia/gdr3/Spectroscopy/xp_sampled_mean_spectrum/'
-    links = fetch_urls(url)
-    
-    total = len(links)
-    finished = 0
 
-    with ThreadPoolExecutor(max_workers=POOL_SIZE) as executor:
-        futures = {executor.submit(download_and_process_file, link): link for link in links}
-        # Wait for all tasks to complete
-        for future in as_completed(futures):
-            try:
-                result = future.result()  # Ensure any exceptions raised are propagated
-                finished += 1
-                print(f"[{finished}/{total}] {result}")
-            except Exception as e:
-                print(f"Exception occurred: {str(e)}")
-                print(traceback.format_exc())
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]  # The first command-line argument
+    else:
+        print(f"{sys.argv[0]} <filename>")
+        sys.exit()
+
+    process_file(filename)
 
 if __name__ == "__main__":
     main()
+

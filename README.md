@@ -1,39 +1,16 @@
-# GAIA Web Service for Siril (Proof of Concept)
+Steps needed to create database:-
 
-This repo is a proof of concept for a GAIA Web Service for Siril
+1) Run fetch_gaia_source.py. This will create a bunch of csv files
+2) Create your stars table according to create.sql
+3) Run the copy command for each of the csv files to import your data into stars
+4) Run fetch_spectra.py to update your database with spectra data
+4) Create your indexes on stars
+5) Create astrometry and photometry tables
+6) Run find-127-astrometry.pl and find-127-photometry.pl to find the 127 brightest stars for each healpixel and level 8
+7) Now you're ready to create your binary files. You may now run generate-astrometry.py and generate-photometry.py
 
-## Fetcher
-There are two python scripts
+This entire process will take a LONG time and it will consume a lot of disk space. The stars database will contain
+1,060,363,318 entries of which 34,445,873 have flux data. This assume you're populating up to mag 20.
 
-### fetch_gaia_source.py
-This is a python script which parses the html page at https://cdn.gea.esac.esa.int/Gaia/gdr3/gaia_source/ to get a list of csv file urls. It then downloads each file and processes it to ignore any line that doesn't meet the following criteria :-
+Once your binary catalogues are written, you can query them using the index_read scripts.
 
-* has_xp_sampled = True OR has_xp_continuous = True
-* phot_g_mean_mag <= 15
-
-It does this with a worker pool (default size 8). Each worker downloads and processes a file, deleting the file after it's complete. The worker outputs csv lines to a queue. A separate thread watches the queue and writes the lines to the output file. This is much more efficient than locking the file for write on multiple threads. The output file can then be bulk loaded into Postgres. This script does not do this step (yet)
-
-### fetch_spectra.py
-This is a python script which parses the html page at https://cdn.gea.esac.esa.int/Gaia/gdr3/Spectroscopy/xp_sampled_mean_spectrum/ to get a list of csv file urls. It then downloads each file and processes it to ignore comments, convert arrays to postgres format, and use the bulk loader to import into a Postgres temporary table. It then prunes this table to remove any lines that are not present in the star table as populated by the previous script and copies the remainder into the spectra table.
-
-## The Database
-This is a PostgresQL database with pgSphere extension. This allows us to populate the astro data and create an index for the astro coordinates. This means we can then look up stars within a certain radius.
-
-## The Schema
-Specifies a schema for the PostgresQL database with pgSphere extension
-
-## The Web App
-This is an asynchronous FastAPI app that exposes 2 GET endpoints:-
-
-* /star/<source_id>
-* /stars?ra=<ra>&dec=<dec>&radius=<radius>&mag=<magnitude>
-* /spectra/<source_id>
-* /spectras?ra=<ra>&dec=<dec>&radius=<radius>&mag=<magnitude>
-
-Run with ```/usr/bin/uvicorn main:app --host 0.0.0.0 --port 8000```
-
-## The Offline File Generator
-This is a Python script which will create an offline binary file containing the star and flux data. The flux data is scaled per star and stored as a 16bit half-precision float.
-
-## The Binary File Tester
-This is based almost entirely on a KStars data tool and is designed to read the binary file and report on any issues
