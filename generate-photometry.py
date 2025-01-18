@@ -4,11 +4,6 @@ import struct
 import numpy as np
 import math
 
-#
-# This script will reference the local Postgres database and build a chunked
-# Siril photometric database
-#
-
 # Define your database connection parameters
 db_params = {
     'dbname': 'stars2',
@@ -18,8 +13,13 @@ db_params = {
     'port': '5432'
 }
 
+#MAXCHUNKPIXEL = 1 # level 2
+#MAXHEALPIX = 2 # level 8
+
 MAXCHUNKPIXEL = 191 # level 2
 MAXHEALPIX = 786431 # level 8
+INT32_MAX = 2**31 -1
+RADEC_SCALE = INT32_MAX / 360.0
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -30,10 +30,19 @@ FROM stars s, photometry r
 where s.source_id = r.source_id AND r.healpix8 = %s AND r.healpix2 = %s
 ORDER BY s.source_id;
 """
+#where s.source_id = r.source_id AND r.healpix8 between %s and %s
+
+#indexquery = """
+#SELECT s.healpix8, COUNT(*) AS entry_count
+#FROM stars s, results r where s.source_id = r.source_id and healpix8 = %s
+#GROUP BY s.healpix8
+#"""
 
 indexquery = """
 select count(healpix8) from photometry where healpix8 = %s and healpix2 = %s
 """
+#select healpix8, count(healpix8) from results8 group by healpix8 order by healpix8
+
 
 total_records = 0
 current_chunk = 0
@@ -46,6 +55,7 @@ def writeHeader(file, first_healpix, last_healpix, chunk_healpix):
     catalogue_type = 2  # astrometric = 1, photometric with xp_sampled data = 2, photometric with xp_continuous data = 3
     chunked = 1
     catalogue_level = 2
+
     spare = b'\x00' * 63  # reserved space
 
     logging.debug(f"catalogue_title = {catalogue_title}, gaia_version = {gaia_version}, healpix_level = {healpix_level}, catalogue_type = {catalogue_type}, catalogue_level = {catalogue_level}, chunked = {chunked}, chunk_healpix = {chunk_healpix}, first_healpix = {first_healpix}, last_healpix = {last_healpix}")
@@ -120,8 +130,8 @@ def writeDataElement(file, record):
     total_records += 1;
     #file.write(struct.pack('Q', record[0]))   # Source ID
 
-    RA = record[1] * 1000000
-    Dec = record[2] * 100000
+    RA = record[1] * RADEC_SCALE
+    Dec = record[2] * RADEC_SCALE
     #logging.debug(f"RA = {RA}, Dec = {Dec}")
     file.write(struct.pack('ii', int(RA), int(Dec)))
 

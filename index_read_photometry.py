@@ -1,18 +1,16 @@
-mport struct
+import struct
 import sys
 import logging
-
-#
-# This script allows testing of the photometry binary file
-#
 
 # Constants
 HEADER_FORMAT = '=48s B B B B B I I I 63s'
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 
-RECORD_FORMAT = "=iihhB343e"  # Format for the record (int, int, short, short, short)
+RECORD_FORMAT = "=iihhhB343e"  # Format for the record (int, int, short, short, short)
 RECORD_SIZE = struct.calcsize(RECORD_FORMAT)  # Size of each record in bytes
 
+INT32_MAX = 2**31 -1
+RADEC_SCALE = INT32_MAX / 360.0
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -91,12 +89,12 @@ def read_record(file_path, healpixid):
                 #logger.debug(f"Unpacked record: {record}")
 
                 # Process and print the record
-                ra, dec, pmra, pmdec, expo = record[:5]
-                flux = record[5:]
-                ra /= 1000000.0
-                dec /= 100000.0
+                ra, dec, pmra, pmdec, mag, expo = record[:6]
+                flux = record[6:]
+                ra /= RADEC_SCALE
+                dec /= RADEC_SCALE
 
-                print(f"Record for healpixid {healpixid}: ra={ra}, dec={dec}, pmra={pmra}, pmdex={pmdec}, expo={expo}, flux = {flux}")
+                print(f"Record for healpixid {healpixid}: ra={ra}, dec={dec}, pmra={pmra}, pmdec={pmdec}, mag={mag}, expo={expo}, flux = {flux}")
             print(f"Numrecords = {numrecords}")
 
     except FileNotFoundError:

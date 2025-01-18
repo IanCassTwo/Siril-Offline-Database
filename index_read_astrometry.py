@@ -2,19 +2,17 @@ import struct
 import sys
 import logging
 
-#
-# This script allows testing of the astrometry binary file
-#
-
 # Constants
 HEADER_FORMAT = '48s B B B 77s'
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 INDEX_SIZE = 786432  # Number of entries in the index
+#INDEX_SIZE = 2  # Number of entries in the index
 INDEX_ENTRY_SIZE = 4  # Each entry is a uint16 (2 bytes)
 INDEX_TOTAL_BYTES = HEADER_SIZE + (INDEX_SIZE * INDEX_ENTRY_SIZE) # Total size of the index
 RECORD_FORMAT = "iihhHh"  # Format for the record (int, int, short, short, short)
 RECORD_SIZE = struct.calcsize(RECORD_FORMAT)  # Size of each record in bytes
-
+INT32_MAX = 2**31 -1
+RADEC_SCALE = INT32_MAX / 360.0
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -81,8 +79,8 @@ def read_record(file_path, healpixid):
 
                 # Process and print the record
                 ra, dec, pmra, pmdec, teff, mag = record
-                ra /= 1000000.0
-                dec /= 100000.0
+                ra /= RADEC_SCALE
+                dec /= RADEC_SCALE
                 mag /= 1000.0
 
                 print(f"Record for healpixid {healpixid}: ra={ra}, dec={dec}, pmra={pmra}, pmdex={pmdec}, teff={teff}, mag={mag}")
@@ -104,7 +102,7 @@ if __name__ == "__main__":
     try:
         healpixid = int(sys.argv[1])
         logger.debug(f"Received healpixid: {healpixid}")
-        read_record("healpix8-no-spcc-index-header.bin", healpixid)
+        read_record("siril_cat_healpix8_astro.dat", healpixid)
     except ValueError:
         logger.error("Invalid healpixid provided. Must be an integer between 0 and 786431.")
         print("Please provide a valid integer healpixid between 0 and 786431.")

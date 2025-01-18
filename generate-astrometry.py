@@ -4,11 +4,6 @@ import struct
 import numpy as np
 import math
 
-#
-# This file will reference your local Postgres database and build the Siril offline
-# photometric database
-#
-
 # Define your database connection parameters
 db_params = {
     'dbname': 'stars2',
@@ -19,6 +14,9 @@ db_params = {
 }
 
 MAXHEALPIX = 786431
+#MAXHEALPIX = 2
+INT32_MAX = 2**31 -1
+RADEC_SCALE = INT32_MAX / 360.0
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -29,10 +27,19 @@ FROM stars s, astrometry r
 where s.source_id = r.source_id AND r.healpix8 = %s
 ORDER BY s.source_id;
 """
+#where s.source_id = r.source_id AND r.healpix8 between %s and %s
+
+#indexquery = """
+#SELECT s.healpix8, COUNT(*) AS entry_count
+#FROM stars s, astrometry r where s.source_id = r.source_id and healpix8 = %s
+#GROUP BY s.healpix8
+#"""
 
 indexquery = """
 select count(healpix8) from astrometry where healpix8 = %s
 """
+#select healpix8, count(healpix8) from astrometry group by healpix8 order by healpix8
+
 
 total_records = 0
 
@@ -129,10 +136,14 @@ def writeDataElement(file, record):
     global total_records
 
     start = file.tell()
+    #print(f"Started {record[0]} at {start}")
     total_records += 1;
+    #file.write(struct.pack('Q', record[0]))   # Source ID
 
-    RA = record[1] * 1000000
-    Dec = record[2] * 100000
+    #RA = record[1] * 1000000
+    #Dec = record[2] * 100000
+    RA = record[1] * RADEC_SCALE
+    Dec = record[2] * RADEC_SCALE
     #logging.debug(f"RA = {RA}, Dec = {Dec}")
     file.write(struct.pack('ii', int(RA), int(Dec)))
 
@@ -151,12 +162,22 @@ def writeDataElement(file, record):
     teff = 0
     if record[7] is not None:
         teff = record[7]
-    file.write(struct.pack('H', int(teff)))
+    file.write(struct.pack('H', int(teff)))  # teff does not exist yet
 
     mag = 0
     if record[5] is not None:
         mag = record[5] * 1000
-    file.write(struct.pack('h', int(mag)))
+    file.write(struct.pack('h', int(mag)))  # mag
+
+    ## Prep flux data
+    #largest_num = max(abs(num) for num in record[4])
+    #e = math.ceil(-math.log10(largest_num))
+    #file.write(struct.pack('B', e))
+
+    ## Write half-precision, scaled flux data
+    #for data in record[4]:
+    #    data *= (10 ** e)
+    #    file.write(struct.pack('e', np.float16(data)))
 
     end = file.tell()
     #logging.debug(f"Wrote {end - start} bytes")
