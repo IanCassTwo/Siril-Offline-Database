@@ -93,6 +93,7 @@ def read_record(file_path, healpixid):
                 flux = record[6:]
                 ra /= RADEC_SCALE
                 dec /= RADEC_SCALE
+                mag /= 1000
 
                 print(f"Record for healpixid {healpixid}: ra={ra}, dec={dec}, pmra={pmra}, pmdec={pmdec}, mag={mag}, expo={expo}, flux = {flux}")
             print(f"Numrecords = {numrecords}")
