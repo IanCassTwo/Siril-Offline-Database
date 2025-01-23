@@ -6,7 +6,7 @@ import logging
 HEADER_FORMAT = '=48s B B B B B I I I 63s'
 HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 
-RECORD_FORMAT = "=iihhhB343e"  # Format for the record (int, int, short, short, short)
+RECORD_FORMAT = "=iihhhB343e"  # Format for the record 
 RECORD_SIZE = struct.calcsize(RECORD_FORMAT)  # Size of each record in bytes
 
 INT32_MAX = 2**31 -1
